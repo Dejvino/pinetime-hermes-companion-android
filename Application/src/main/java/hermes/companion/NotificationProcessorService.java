@@ -79,6 +79,7 @@ public class NotificationProcessorService extends IntentService {
 
     private void sendNotificationToBluetooth(String text)
     {
-        bluetoothLeService.sendNotification(text);
+        String cleansedText = ("" + text).replaceAll("[^\\x20-\\x7E]", "");
+        bluetoothLeService.sendNotification(cleansedText);
     }
 }
