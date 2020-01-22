@@ -65,6 +65,10 @@ public class BluetoothLeService extends Service {
 
     public final static UUID UUID_HEART_RATE_MEASUREMENT =
             UUID.fromString(SampleGattAttributes.HEART_RATE_MEASUREMENT);
+    public final static UUID UUID_NOTIFICATION_INBOX =
+            UUID.fromString("abababab-abab-abab-0000-00000000ffde");
+
+    private List<BluetoothGattService> gattServices = null;
 
     // Implements callback methods for GATT events that the app cares about.  For example,
     // connection change and services discovered.
@@ -84,6 +88,7 @@ public class BluetoothLeService extends Service {
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 intentAction = ACTION_GATT_DISCONNECTED;
                 mConnectionState = STATE_DISCONNECTED;
+                gattServices = null;
                 Log.i(TAG, "Disconnected from GATT server.");
                 broadcastUpdate(intentAction);
             }
@@ -93,6 +98,8 @@ public class BluetoothLeService extends Service {
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
+
+                gattServices = BluetoothLeService.this.getSupportedGattServices();
             } else {
                 Log.w(TAG, "onServicesDiscovered received: " + status);
             }
@@ -150,6 +157,27 @@ public class BluetoothLeService extends Service {
             }
         }
         sendBroadcast(intent);
+    }
+
+    public void sendNotification(String text) {
+        if (text == null) {
+            Log.e(TAG, "Cannot send notification. Text is null.");
+        }
+        if (gattServices == null) {
+            Log.i(TAG, "Cannot send notification. GATT services unknown. Did you connect to the device?");
+            return;
+        }
+        for (BluetoothGattService gattService : gattServices) {
+            BluetoothGattCharacteristic gattCharacteristic
+                    = gattService.getCharacteristic(UUID_NOTIFICATION_INBOX);
+            if (gattCharacteristic != null) {
+                gattCharacteristic.setValue(text);
+                writeCharacteristic(gattCharacteristic);
+                Log.d(TAG, "Notification sent: " + text);
+                return;
+            }
+        }
+        Log.w(TAG, "Cannot send notification. Characteristic with UUID " + UUID_NOTIFICATION_INBOX.toString() + " not found.");
     }
 
     public class LocalBinder extends Binder {
@@ -280,6 +308,14 @@ public class BluetoothLeService extends Service {
             return;
         }
         mBluetoothGatt.readCharacteristic(characteristic);
+    }
+
+    public void writeCharacteristic(BluetoothGattCharacteristic characteristic) {
+        if (mBluetoothAdapter == null || mBluetoothGatt == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized");
+            return;
+        }
+        mBluetoothGatt.writeCharacteristic(characteristic);
     }
 
     /**

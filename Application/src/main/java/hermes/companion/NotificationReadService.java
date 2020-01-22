@@ -1,80 +1,53 @@
 package hermes.companion;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
+import android.app.Notification;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 public class NotificationReadService extends NotificationListenerService {
 
     private String TAG = this.getClass().getSimpleName();
-    private NLServiceReceiver nlservicereciver;
+
+    public static final String NOTIFICATION_POSTED_EVENT =
+            BuildConfig.APPLICATION_ID + ".NOTIFICATION_POSTED_EVENT";
+    public static final String NOTIFICATION_REMOVED_EVENT =
+            BuildConfig.APPLICATION_ID + ".NOTIFICATION_REMOVED_EVENT";
+
     @Override
     public void onCreate() {
         super.onCreate();
-        nlservicereciver = new NLServiceReceiver();
-        IntentFilter filter = new IntentFilter();
-        filter.addAction("com.kpbird.nlsexample.NOTIFICATION_LISTENER_SERVICE_EXAMPLE");
-        registerReceiver(nlservicereciver,filter);
         Log.i(TAG, "Notification read service started.");
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(nlservicereciver);
         Log.i(TAG, "Notification read service destroyed.");
     }
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-
+        Notification notif = sbn.getNotification();
         Log.i(TAG,"**********  onNotificationPosted");
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText + "\t" + sbn.getPackageName());
-        Intent i = new  Intent("com.kpbird.nlsexample.NOTIFICATION_LISTENER_EXAMPLE");
-        i.putExtra("notification_event","onNotificationPosted :" + sbn.getPackageName() + "\n");
-        sendBroadcast(i);
+        Intent i = new  Intent(NOTIFICATION_POSTED_EVENT);
+        i.putExtra("text", notif.extras.getString(Notification.EXTRA_TEXT));
+        i.putExtra("title", notif.extras.getString(Notification.EXTRA_TITLE));
+        i.putExtra("ticker", sbn.getNotification().tickerText);
 
+        LocalBroadcastManager.getInstance(this).sendBroadcast(i);
     }
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
-        Log.i(TAG,"********** onNOtificationRemoved");
+        Log.i(TAG,"********** onNotificationRemoved");
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText +"\t" + sbn.getPackageName());
-        Intent i = new  Intent("com.kpbird.nlsexample.NOTIFICATION_LISTENER_EXAMPLE");
+        Intent i = new  Intent(NOTIFICATION_REMOVED_EVENT);
         i.putExtra("notification_event","onNotificationRemoved :" + sbn.getPackageName() + "\n");
 
-        sendBroadcast(i);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(i);
     }
-
-    class NLServiceReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if(intent.getStringExtra("command").equals("clearall")){
-                NotificationReadService.this.cancelAllNotifications();
-            }
-            else if(intent.getStringExtra("command").equals("list")){
-                Intent i1 = new  Intent("com.kpbird.nlsexample.NOTIFICATION_LISTENER_EXAMPLE");
-                i1.putExtra("notification_event","=====================");
-                sendBroadcast(i1);
-                int i=1;
-                for (StatusBarNotification sbn : NotificationReadService.this.getActiveNotifications()) {
-                    Intent i2 = new  Intent("com.kpbird.nlsexample.NOTIFICATION_LISTENER_EXAMPLE");
-                    i2.putExtra("notification_event",i +" " + sbn.getPackageName() + "\n");
-                    sendBroadcast(i2);
-                    i++;
-                }
-                Intent i3 = new  Intent("com.kpbird.nlsexample.NOTIFICATION_LISTENER_EXAMPLE");
-                i3.putExtra("notification_event","===== Notification List ====");
-                sendBroadcast(i3);
-
-            }
-
-        }
-    }
-
 }
