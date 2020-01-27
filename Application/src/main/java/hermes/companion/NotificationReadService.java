@@ -33,9 +33,10 @@ public class NotificationReadService extends NotificationListenerService {
         Notification notif = sbn.getNotification();
         Log.i(TAG,"**********  onNotificationPosted");
         Log.i(TAG,"ID :" + sbn.getId() + "\t" + sbn.getNotification().tickerText + "\t" + sbn.getPackageName());
+
         Intent i = new  Intent(NOTIFICATION_POSTED_EVENT);
-        i.putExtra("text", notif.extras.getString(Notification.EXTRA_TEXT));
-        i.putExtra("title", notif.extras.getString(Notification.EXTRA_TITLE));
+        i.putExtra("text", String.valueOf(notif.extras.get(Notification.EXTRA_TEXT)));
+        i.putExtra("title", String.valueOf(notif.extras.get(Notification.EXTRA_TITLE)));
         i.putExtra("ticker", sbn.getNotification().tickerText);
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(i);

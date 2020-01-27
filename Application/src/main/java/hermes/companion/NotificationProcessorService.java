@@ -13,6 +13,9 @@ import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static hermes.companion.NotificationReadService.NOTIFICATION_POSTED_EVENT;
 
 public class NotificationProcessorService extends IntentService {
@@ -36,12 +39,31 @@ public class NotificationProcessorService extends IntentService {
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            String ticker = intent.getStringExtra("ticker");
+            String title = intent.getStringExtra("title");
+            String text = intent.getStringExtra("text");
             String log = "Received broadcast.\n" +
-                    "Title: " + intent.getStringExtra("title") + "\n" +
-                    "Text: " + intent.getStringExtra("text") + "\n";
+                    "Ticker: " + ticker + "\n" +
+                    "Title: " + title + "\n" +
+                    "Text: " + text + "\n";
             Log.d(TAG, log);
 
-            sendNotificationToBluetooth(intent.getStringExtra("title") + ": " + intent.getStringExtra("text"));
+            List<String> msgParts = new ArrayList<>(3);
+            if (ticker != null) {
+                msgParts.add(ticker);
+            }
+            if (title != null && !title.equals(ticker)) {
+                msgParts.add(title);
+            }
+            if (text != null && !text.equals(ticker)) {
+                msgParts.add(text);
+            }
+            String msg = String.join("\n", msgParts);
+
+            if (msg.length() >= 64) {
+                msg = msg.substring(0, 58) + "[...]";
+            }
+            sendNotificationToBluetooth(msg);
         }
     };
 
@@ -79,7 +101,7 @@ public class NotificationProcessorService extends IntentService {
 
     private void sendNotificationToBluetooth(String text)
     {
-        String cleansedText = ("" + text).replaceAll("[^\\x20-\\x7E]", "");
+        String cleansedText = ("" + text).replaceAll("[^\\x09-\\x7E]", "#").concat("\n");
         bluetoothLeService.sendNotification(cleansedText);
     }
 }

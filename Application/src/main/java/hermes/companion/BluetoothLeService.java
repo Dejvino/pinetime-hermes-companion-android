@@ -162,6 +162,7 @@ public class BluetoothLeService extends Service {
     public void sendNotification(String text) {
         if (text == null) {
             Log.e(TAG, "Cannot send notification. Text is null.");
+            return;
         }
         if (gattServices == null) {
             Log.i(TAG, "Cannot send notification. GATT services unknown. Did you connect to the device?");
@@ -171,9 +172,16 @@ public class BluetoothLeService extends Service {
             BluetoothGattCharacteristic gattCharacteristic
                     = gattService.getCharacteristic(UUID_NOTIFICATION_INBOX);
             if (gattCharacteristic != null) {
-                gattCharacteristic.setValue(text);
-                writeCharacteristic(gattCharacteristic);
-                Log.d(TAG, "Notification sent: " + text);
+                byte[] msg = new byte[text.length() + 1];
+                msg[0] = (byte) text.length();
+                System.arraycopy(text.getBytes(), 0, msg, 1, text.length());
+                gattCharacteristic.setValue(msg);
+                if (writeCharacteristic(gattCharacteristic)) {
+                    Log.d(TAG, "Notification sent: " + text);
+                } else {
+                    // TODO: enqueue and try again
+                    Log.e(TAG, "Notification NOT sent: " + text);
+                }
                 return;
             }
         }
@@ -310,12 +318,12 @@ public class BluetoothLeService extends Service {
         mBluetoothGatt.readCharacteristic(characteristic);
     }
 
-    public void writeCharacteristic(BluetoothGattCharacteristic characteristic) {
+    public boolean writeCharacteristic(BluetoothGattCharacteristic characteristic) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
             Log.w(TAG, "BluetoothAdapter not initialized");
-            return;
+            return false;
         }
-        mBluetoothGatt.writeCharacteristic(characteristic);
+        return mBluetoothGatt.writeCharacteristic(characteristic);
     }
 
     /**
