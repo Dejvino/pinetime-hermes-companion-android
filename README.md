@@ -7,14 +7,15 @@ Android [Companion App](https://github.com/Dejvino/pinetime-hermes-companion) fo
 ## DONE
 * Choose a Bluetooth device to sync
 * CTS Current Time Bluetooth service (to sync the watch's time)
-* Reading the phone's notifications
+* Reading & sending the phone's notifications to the device
+* Running as a background service
 
 ## TODO
-* Sending the phone's notifications to the watch
 * Notifications filtering & settings
 * UI
-* Run as a background service
+* Notifications queue, resending undelivered messages
 * Connect automatically to the watch
+* *Reliable* background service
 * Reading the watch's status (battery level etc.)
 
 # Created Thanks To
